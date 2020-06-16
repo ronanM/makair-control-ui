@@ -1,6 +1,6 @@
 [package]
 name = "makair-control"
-version = "1.2.0"
+version = "1.4.0"
 description = "Control UI for the MakAir SARS respirator."
 readme = "README.md"
 license-file = "LICENSE.md"
@@ -22,6 +22,9 @@ clap = { version = "2.33", default-features = false }
 lazy_static = "1.4"
 rust-embed = { version = "5.5.1", features = ["compression"] }
 chrono = "0.4.11"
+fluent = "0.12"
+unic-langid = "0.9"
+inflate = "0.4"
 winit = "0.19"
 image = "0.23.3"
 glium = "0.24"
@@ -29,7 +32,7 @@ plotters = {version = "0.2", default_features = false, features = ["image_encode
 conrod_glium = "0.69"
 conrod_winit = "0.69"
 conrod_core = "0.69"
-telemetry = { git = "https://github.com/makers-for-life/makair-telemetry", features = ["env_logger"], rev = "3b4ee1656ec7b6703490ea55595f0b8b9d1850f2" }
+makair-telemetry = { git = "https://github.com/makers-for-life/makair-telemetry", features = ["env_logger"], rev = "f22dd4bb54ef37ee1218c4249cd4a51198d5ef0c" }
 
 [features]
 default = []

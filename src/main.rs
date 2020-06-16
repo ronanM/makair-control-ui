@@ -14,11 +14,15 @@ extern crate rust_embed;
 #[macro_use]
 extern crate conrod_core;
 extern crate conrod_winit;
+extern crate fluent;
 extern crate image;
+extern crate inflate;
+extern crate unic_langid;
 
 mod chip;
 mod config;
 mod display;
+mod locale;
 mod physics;
 mod serial;
 
@@ -30,6 +34,8 @@ use log::LevelFilter;
 
 use config::logger::ConfigLogger;
 use display::window::DisplayWindowBuilder;
+use locale::accessor::LocaleAccessor;
+use locale::loader::LocaleLoader;
 
 #[derive(RustEmbed)]
 #[folder = "res/images/"]
@@ -39,8 +45,13 @@ pub struct EmbeddedImages;
 #[folder = "res/fonts/"]
 pub struct EmbeddedFonts;
 
+#[derive(RustEmbed)]
+#[folder = "res/locales/"]
+pub struct EmbeddedLocales;
+
 struct AppArgs {
     log: String,
+    translation: String,
     mode: Mode,
     fullscreen: bool,
 }
@@ -55,6 +66,7 @@ pub enum Mode {
 
 lazy_static! {
     static ref APP_ARGS: AppArgs = make_app_args();
+    static ref APP_I18N: LocaleAccessor = make_app_i18n();
 }
 
 fn make_app_args() -> AppArgs {
@@ -97,8 +109,17 @@ fn make_app_args() -> AppArgs {
                 .long("fullscreen")
                 .help("Launch in fullscreen mode"),
         )
+        .arg(
+            Arg::with_name("translation")
+                .short("t")
+                .long("translation")
+                .help("Translation locale ISO code")
+                .default_value("en")
+                .takes_value(true),
+        )
         .get_matches();
 
+    // Parse input mode
     let mode = match (matches.value_of("port"), matches.value_of("input")) {
         (Some(p), _) => Mode::Port {
             port: p.to_string(),
@@ -114,14 +135,23 @@ fn make_app_args() -> AppArgs {
     // Generate owned app arguments
     AppArgs {
         log: String::from(matches.value_of("log").expect("invalid log value")),
+        translation: String::from(
+            matches
+                .value_of("translation")
+                .expect("invalid translation value"),
+        ),
         mode,
         fullscreen: matches.is_present("fullscreen"),
     }
 }
 
+fn make_app_i18n() -> LocaleAccessor {
+    LocaleLoader::new(&APP_ARGS.translation).into_accessor()
+}
+
 fn ensure_states() {
     // Ensure all statics are valid (a `deref` is enough to lazily initialize them)
-    let _ = APP_ARGS.deref();
+    let (_, _) = (APP_ARGS.deref(), APP_I18N.deref());
 }
 
 fn main() {

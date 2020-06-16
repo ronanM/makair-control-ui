@@ -1,4 +1,8 @@
-# Control Unit
+# MakAir Control UI
+
+<p align="center">
+  <img alt="Normal Respiratory Cycle" src="./doc/screens/normal-cycle.gif">
+</p>
 
 ## Versions
 
@@ -6,6 +10,8 @@
 | ------- | -------------- | ------ |
 | V1.1.x | Operational initial release | ✅
 | V1.2.x | Crashes fixed + smoother graph + implemented medical staff feedbacks | ✅
+| V1.3.x | Improve text readability, by increasing font sizes | ✅
+| V1.4.x | Added internationalization capabilities | ✅
 
 ## How To Build?
 
@@ -25,21 +31,53 @@ _Tested at Rust version: `rustc 1.43.0 (4fb7144ed 2020-04-20)`_
 
 To run the Control UI, please ensure that your device first has an open serial connection with the motherboard.
 
+_Note that the Control UI relies on the MakAir Telemetry library, which gets pulled from the [makair-telemetry](https://github.com/makers-for-life/makair-telemetry) repository._
+
 Take note of the serial port used as an input on your Control UI board, and call:
 
-1. `./makair-control --port=0` (where `--port` is your serial port ID, maybe /dev/ttyUSB0)
+1. Run: `./makair-control --port=0` (where `--port` is your serial port ID, maybe /dev/ttyUSB0)
 
-You may also play a pre-recorded file, by passing it as an input (this is handy while developing):
+You may also play a pre-recorded file, by passing it as an input (this is handy while developing; example records are available in the telemetry library repository):
 
-1. `./makair-control --input=../telemetry/records/few_cycles` (where `--input` is an UNIX file path)
+1. Pull the telemetry library (in the parent directory): `git pull https://github.com/makers-for-life/makair-telemetry.git`
+2. Run an example (from the Control UI directory): `./makair-control --input=../makair-telemetry/records/few_cycles` (where `--input` is an UNIX file path)
+
+## Supported Translations
+
+As MakAir was designed to be used internationally, we have made sure that the Control UI was fully translated in major languages.
+
+You can pass the desired locale code when running the `makair-control` binary, using the `--translation` argument. _Make sure to pass the locale ISO code, eg. for French: `--translation=fr`._
+
+**➡️ You can find the list of supported languages, with their ISO language codes below:**
+
+* 🇬🇧 **[English](./res/locales/en.ftl)**: `en`
+* 🇫🇷 **[French](./res/locales/fr.ftl)**: `fr`
+* 🇩🇪 **[German](./res/locales/de.ftl)**: `de`
+* 🇮🇹 **[Italian](./res/locales/it.ftl)**: `it`
+* 🇪🇸 **[Spanish](./res/locales/es.ftl)**: `es`
+* 🇵🇹 **[Portuguese](./res/locales/pt.ftl)**: `pt`
+* 🇵🇱 **[Polish](./res/locales/pl.ftl)**: `pl` — (WIP)
+* 🇨🇿 **[Czech](./res/locales/cs.ftl)**: `cs` — (WIP)
+* 🇱🇻 **[Latvian](./res/locales/lv.ftl)**: `lv`
+* 🇷🇺 **[Russian](./res/locales/ru.ftl)**: `ru`
+* 🇺🇦 **[Ukrainian](./res/locales/uk.ftl)**: `uk`
+* 🇹🇷 **[Turkish](./res/locales/tr.ftl)**: `tr` — (WIP)
+* 🇦🇿 **[Azerbaijani](./res/locales/az.ftl)**: `az` — (WIP)
+* 🇨🇳 **[Chinese (Simplified)](./res/locales/zh.ftl)**: `zh`
+* 🇯🇵 **[Japanese](./res/locales/ja.ftl)**: `ja` — (WIP)
+* 🇰🇷 **[Korean](./res/locales/ko.ftl)**: `ko` — (WIP)
+
+ℹ️ If your language does not appear in the list above, you may translate the [base English file](./res/locales/en.ftl), then [open a Pull Request](https://github.com/makers-for-life/makair-control-ui/pulls).
 
 ## How To Build A Release? (Cross-Compile For ARM)
 
 To cross-compile a new release for an ARM target (using MUSL; statically-linked libraries), you can call the `release_binaries.sh` script:
 
-1. `./scripts/release_binaries.sh --version=1.0.0`
+1. Run: `./scripts/release_binaries.sh --version=1.0.0`
 
 _Make sure to replace the `version` script argument with the current release version. This is used for file naming purposes only._
+
+**⚠️ Important note: this is still a work in progress. We are near cross-compiling capabilities, though some work still needs to be done due to non-MUSL C-based dependencies.**
 
 ## Optional Features
 

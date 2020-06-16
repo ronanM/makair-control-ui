@@ -21,6 +21,7 @@ use crate::chip::ChipState;
 use crate::config::environment::*;
 use crate::physics::pressure::process_max_allowed_pressure;
 use crate::physics::types::DataPressure;
+use crate::APP_I18N;
 
 use super::fonts::Fonts;
 
@@ -65,12 +66,12 @@ pub struct HeartbeatWidgetConfig<'a> {
     inner: WidgetId,
 }
 
-pub struct TelemetryWidgetConfig<'a> {
-    pub title: &'a str,
+pub struct TelemetryWidgetConfig {
+    pub title: String,
     pub value_measured: Option<String>,
     pub value_target: Option<String>,
     pub value_arrow: conrod_core::image::Id,
-    pub unit: &'a str,
+    pub unit: String,
     pub ids: (
         WidgetId,
         WidgetId,
@@ -255,7 +256,7 @@ pub enum ControlWidgetType<'a> {
     Graph(GraphWidgetConfig),
     NoData(NoDataWidgetConfig),
     Stop(StopWidgetConfig),
-    Telemetry(TelemetryWidgetConfig<'a>),
+    Telemetry(TelemetryWidgetConfig),
 }
 
 pub struct ControlWidget<'a> {
@@ -332,9 +333,9 @@ impl<'a> ControlWidget<'a> {
 
         text_style.font_id = Some(Some(self.fonts.bold));
         text_style.color = Some(color::WHITE);
-        text_style.font_size = Some(11);
+        text_style.font_size = Some(12);
 
-        widget::text::Text::new("ALARMS")
+        widget::text::Text::new(&APP_I18N.t("alarms-title"))
             .with_style(text_style)
             .top_left_with_margins_on(
                 config.container,
@@ -352,9 +353,9 @@ impl<'a> ControlWidget<'a> {
                 self.alarm(&config, **code, alarm, x);
             }
         } else {
-            widget::text::Text::new("There are no active alarms.")
+            widget::text::Text::new(&APP_I18N.t("alarms-empty"))
                 .color(Color::Rgba(1.0, 1.0, 1.0, 0.5))
-                .font_size(11)
+                .font_size(12)
                 .right_from(config.title, 42.0)
                 .set(config.empty, &mut self.ui);
         }
@@ -442,7 +443,7 @@ impl<'a> ControlWidget<'a> {
 
         text_style.font_id = Some(Some(self.fonts.bold));
         text_style.color = Some(color::WHITE);
-        text_style.font_size = Some(11);
+        text_style.font_size = Some(13);
 
         widget::text::Text::new(&format!("{}", alarm_code.code()))
             .with_style(text_style)
@@ -476,8 +477,8 @@ impl<'a> ControlWidget<'a> {
 
         widget::text::Text::new(&code.description())
             .color(color::WHITE)
-            .font_size(10)
-            .top_left_with_margins_on(config.alarm_messages_containers[index], 4.0, 10.0)
+            .font_size(11)
+            .top_left_with_margins_on(config.alarm_messages_containers[index], 5.0, 10.0)
             .set(config.alarm_messages[index], &mut self.ui);
     }
 
@@ -544,7 +545,7 @@ impl<'a> ControlWidget<'a> {
 
         unit_text_style.font_id = Some(Some(self.fonts.bold));
         unit_text_style.color = Some(color::WHITE);
-        unit_text_style.font_size = Some(10);
+        unit_text_style.font_size = Some(11);
 
         if is_unit_stopped {
             unit_box_style.color =
@@ -556,20 +557,22 @@ impl<'a> ControlWidget<'a> {
         unit_box_style.border = Some(0.0);
         unit_box_style.border_color = Some(color::TRANSPARENT);
 
+        let unit_text_value = if is_unit_stopped {
+            APP_I18N.t("status-unit-stopped")
+        } else {
+            APP_I18N.t("status-unit-active")
+        };
+
         canvas::Canvas::new()
             .with_style(unit_box_style)
             .w_h(box_width, box_height)
             .top_left_of(config.wrapper)
             .set(config.unit_box, &mut self.ui);
 
-        widget::text::Text::new(if is_unit_stopped {
-            "Unit stopped"
-        } else {
-            "Unit active"
-        })
-        .with_style(unit_text_style)
-        .mid_top_with_margin_on(config.unit_box, STATUS_BOX_TEXT_MARGIN_TOP)
-        .set(config.unit_text, &mut self.ui);
+        widget::text::Text::new(&unit_text_value)
+            .with_style(unit_text_style)
+            .mid_top_with_margin_on(config.unit_box, STATUS_BOX_TEXT_MARGIN_TOP)
+            .set(config.unit_text, &mut self.ui);
 
         // Display power status text
         let mut power_box_style = canvas::Style::default();
@@ -577,7 +580,7 @@ impl<'a> ControlWidget<'a> {
 
         power_text_style.font_id = Some(Some(self.fonts.bold));
         power_text_style.color = Some(color::WHITE);
-        power_text_style.font_size = Some(10);
+        power_text_style.font_size = Some(11);
 
         if is_battery_powered {
             power_box_style.color = Some(Color::Rgba(208.0 / 255.0, 92.0 / 255.0, 0.0, 1.0));
@@ -595,7 +598,7 @@ impl<'a> ControlWidget<'a> {
             .set(config.power_box, &mut self.ui);
 
         let power_text_value = if is_battery_powered {
-            let mut value = String::from("Battery");
+            let mut value = APP_I18N.t("status-power-battery");
 
             if let Some(battery_level) = config.battery_level {
                 value.push_str(" (");
@@ -605,7 +608,7 @@ impl<'a> ControlWidget<'a> {
 
             value
         } else {
-            "AC power".to_string()
+            APP_I18N.t("status-power-ac")
         };
 
         widget::text::Text::new(&power_text_value)
@@ -714,10 +717,10 @@ impl<'a> ControlWidget<'a> {
         .set(config.ids.1, &mut self.ui);
 
         // Create title text
-        widget::Text::new(config.title)
+        widget::Text::new(&config.title)
             .color(color::WHITE)
-            .top_left_with_margins_on(config.ids.1, 10.0, TELEMETRY_WIDGET_PADDING_LEFT)
-            .font_size(11)
+            .top_left_with_margins_on(config.ids.1, 8.0, TELEMETRY_WIDGET_PADDING_LEFT)
+            .font_size(13)
             .set(config.ids.2, &mut self.ui);
 
         // Initiate text style for measured value
@@ -725,7 +728,7 @@ impl<'a> ControlWidget<'a> {
 
         value_text_style.font_id = Some(Some(self.fonts.bold));
         value_text_style.color = Some(color::WHITE);
-        value_text_style.font_size = Some(17);
+        value_text_style.font_size = Some(19);
 
         // Create value text
         // Notice: there are different drawing cases depending on values provided
@@ -736,7 +739,7 @@ impl<'a> ControlWidget<'a> {
 
                 target_text_style.font_id = Some(Some(self.fonts.regular));
                 target_text_style.color = Some(color::WHITE);
-                target_text_style.font_size = Some(13);
+                target_text_style.font_size = Some(15);
 
                 // Draw measured value
                 widget::Text::new(&value_measured)
@@ -776,10 +779,10 @@ impl<'a> ControlWidget<'a> {
         }
 
         // Create unit text
-        widget::Text::new(config.unit)
+        widget::Text::new(&config.unit)
             .color(color::WHITE.with_alpha(0.2))
-            .bottom_left_with_margins_on(config.ids.1, 12.0, TELEMETRY_WIDGET_PADDING_LEFT)
-            .font_size(11)
+            .bottom_left_with_margins_on(config.ids.1, 10.0, TELEMETRY_WIDGET_PADDING_LEFT)
+            .font_size(12)
             .set(config.ids.6, &mut self.ui);
 
         TELEMETRY_WIDGET_SIZE_WIDTH
@@ -792,7 +795,7 @@ impl<'a> ControlWidget<'a> {
         text_style.color = Some(color::WHITE);
         text_style.font_size = Some(30);
 
-        widget::Text::new(&format!("An error happened:\n{}", config.error)) // using \n instead of the wrap methods because I couldn't make them work
+        widget::Text::new(&format!("{}\n{}", APP_I18N.t("error-title"), config.error)) // using \n instead of the wrap methods because I couldn't make them work
             .color(color::WHITE)
             .align_top() // Aligned to top otherwise I can't make the line breaks work
             .with_style(text_style)
@@ -850,20 +853,20 @@ impl<'a> ControlWidget<'a> {
 
         let mut title_style = widget::text::Style::default();
         title_style.color = Some(color::WHITE);
-        title_style.font_size = Some(18);
+        title_style.font_size = Some(19);
         title_style.font_id = Some(Some(self.fonts.bold));
 
-        widget::text::Text::new("Ventilator unit inactive")
+        widget::text::Text::new(&APP_I18N.t("stop-title"))
             .with_style(title_style)
             .mid_top_with_margin_on(config.container, DISPLAY_STOPPED_MESSAGE_PADDING_TOP)
             .set(config.title, &mut self.ui);
 
         let mut message_style = widget::text::Style::default();
         message_style.color = Some(Color::Rgba(1.0, 1.0, 1.0, 0.75));
-        message_style.font_size = Some(13);
+        message_style.font_size = Some(14);
         message_style.font_id = Some(Some(self.fonts.regular));
 
-        widget::text::Text::new("Please re-enable it to resume respiration")
+        widget::text::Text::new(&APP_I18N.t("stop-description"))
             .with_style(message_style)
             .mid_bottom_with_margin_on(config.container, DISPLAY_STOPPED_MESSAGE_PADDING_BOTTOM)
             .set(config.message, &mut self.ui);
@@ -878,7 +881,7 @@ impl<'a> ControlWidget<'a> {
         text_style.color = Some(color::WHITE);
         text_style.font_size = Some(30);
 
-        widget::Text::new("Device disconnected or no data received")
+        widget::Text::new(&APP_I18N.t("no-data-title"))
             .color(color::WHITE)
             .middle()
             .with_style(text_style)
