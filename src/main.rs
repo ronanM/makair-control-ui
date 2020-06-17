@@ -13,16 +13,12 @@ extern crate lazy_static;
 extern crate rust_embed;
 #[macro_use]
 extern crate conrod_core;
-extern crate conrod_winit;
-extern crate fluent;
-extern crate image;
-extern crate inflate;
-extern crate unic_langid;
 
 mod chip;
 mod config;
 mod display;
 mod locale;
+mod lora;
 mod physics;
 mod serial;
 
@@ -32,6 +28,8 @@ use std::str::FromStr;
 use clap::{App, Arg};
 use log::LevelFilter;
 
+use crate::chip::Chip;
+use crate::lora::LoraController;
 use config::logger::ConfigLogger;
 use display::window::DisplayWindowBuilder;
 use locale::accessor::LocaleAccessor;
@@ -54,6 +52,18 @@ struct AppArgs {
     translation: String,
     mode: Mode,
     fullscreen: bool,
+    lora: bool,
+    #[cfg(feature = "lora")]
+    lora_device: String,
+}
+
+impl AppArgs {
+    pub fn is_recording(&self) -> bool {
+        match &self.mode {
+            Mode::Port { output_dir, .. } => output_dir.is_some(),
+            _ => false,
+        }
+    }
 }
 
 pub enum Mode {
@@ -100,6 +110,7 @@ fn make_app_args() -> AppArgs {
             Arg::with_name("output")
                 .short("o")
                 .long("output")
+                .env("OUTPUT_DIR")
                 .help("Path to a directory where to record telemetry")
                 .takes_value(true),
         )
@@ -116,6 +127,17 @@ fn make_app_args() -> AppArgs {
                 .help("Translation locale ISO code")
                 .default_value("en")
                 .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("disable-lora")
+                .long("disable-lora")
+                .help("Disable LORA support"),
+        )
+        .arg(
+            Arg::with_name("lora-device")
+                .long("lora-device")
+                .default_value("/dev/ttyAMA0")
+                .help("Path to the LORA device"),
         )
         .get_matches();
 
@@ -142,6 +164,13 @@ fn make_app_args() -> AppArgs {
         ),
         mode,
         fullscreen: matches.is_present("fullscreen"),
+        lora: !matches.is_present("disable-lora"),
+        #[cfg(feature = "lora")]
+        lora_device: String::from(
+            matches
+                .value_of("lora-device")
+                .expect("invalid lora-device value"),
+        ),
     }
 }
 
@@ -163,8 +192,17 @@ fn main() {
     // Ensure all states are bound
     ensure_states();
 
+    // Launch LORA init and get Sender for chip
+    let lora_sender = if APP_ARGS.lora && cfg!(feature = "lora") {
+        Some(LoraController::new())
+    } else {
+        None
+    };
+    // Create our "Chip" that will store all the data
+    let chip = Chip::new(lora_sender);
+
     // Spawn window manager
-    DisplayWindowBuilder::new().spawn();
+    DisplayWindowBuilder::new().spawn(chip);
 
     info!("stopped");
 }
